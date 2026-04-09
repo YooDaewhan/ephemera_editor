@@ -12,13 +12,10 @@ export default function CollectionPage({ params }: { params: Promise<{ name: str
   const col = getCollection(name);
   const formRef = useRef<HTMLDivElement>(null);
 
-  const [docs, setDocs] = useState<Doc[]>([]);
-  const [showTable, setShowTable] = useState(false);
   const [form, setForm] = useState<Doc>({});
   const [editingId, setEditingId] = useState<string | null>(null);
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
-  const [loadingDocs, setLoadingDocs] = useState(false);
 
   const initForm = () => {
     if (!col) return {};
@@ -31,24 +28,6 @@ export default function CollectionPage({ params }: { params: Promise<{ name: str
     if (col) setForm(initForm());
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [col]);
-
-  // 데이터 조회
-  const fetchDocs = async () => {
-    setLoadingDocs(true);
-    try {
-      const res = await fetch(`/api/collections/${name}`);
-      const data = await res.json();
-      setDocs(Array.isArray(data) ? data : []);
-    } catch {
-      setDocs([]);
-    }
-    setLoadingDocs(false);
-  };
-
-  const handleToggleTable = () => {
-    if (!showTable) fetchDocs();
-    setShowTable(!showTable);
-  };
 
   const handleChange = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -95,7 +74,6 @@ export default function CollectionPage({ params }: { params: Promise<{ name: str
         setStatus('success');
         setMessage(isEdit ? '수정 완료! ✅' : '저장 완료! ✅');
         handleCancelEdit();
-        if (showTable) fetchDocs();
       } else {
         setStatus('error');
         setMessage(isEdit ? '수정 실패' : '저장 실패');
@@ -106,49 +84,10 @@ export default function CollectionPage({ params }: { params: Promise<{ name: str
     }
   };
 
-  // 수정 모드 진입: doc의 데이터를 폼에 로드
-  const handleEdit = (doc: Doc) => {
-    if (!col) return;
-    const loaded: Doc = {};
-    col.fields.forEach((f) => {
-      const val = doc[f.key];
-      if (val === null || val === undefined) {
-        loaded[f.key] = '';
-      } else if (typeof val === 'object') {
-        loaded[f.key] = JSON.stringify(val, null, 2);
-      } else {
-        loaded[f.key] = String(val);
-      }
-    });
-    setForm(loaded);
-    setEditingId(doc._id);
-    setMessage('');
-    setStatus('idle');
-    // 폼으로 스크롤
-    setTimeout(() => formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
-  };
-
   // 수정 취소
   const handleCancelEdit = () => {
     setEditingId(null);
     setForm(initForm());
-  };
-
-  // 삭제
-  const handleDelete = async (id: string) => {
-    if (!confirm('정말 삭제하시겠습니까?')) return;
-    try {
-      await fetch(`/api/collections/${name}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id }),
-      });
-      // 수정 중이던 항목이 삭제되면 편집 취소
-      if (editingId === id) handleCancelEdit();
-      fetchDocs();
-    } catch {
-      alert('삭제 실패');
-    }
   };
 
   if (!col) {
@@ -175,81 +114,13 @@ export default function CollectionPage({ params }: { params: Promise<{ name: str
           </h1>
         </div>
 
-        {/* 전체 보기 버튼 */}
-        <button
-          onClick={handleToggleTable}
-          className="mb-4 px-4 py-2 rounded-lg bg-blue-600 text-white font-medium text-sm hover:bg-blue-700 transition cursor-pointer"
+        {/* 전체 데이터 보기 링크 */}
+        <Link
+          href={`/collections/${name}/data`}
+          className="mb-4 inline-block px-4 py-2 rounded-lg bg-blue-600 text-white font-medium text-sm hover:bg-blue-700 transition"
         >
-          {showTable ? '📋 테이블 닫기' : '📋 전체 데이터 보기'}
-        </button>
-
-        {/* 테이블 영역 */}
-        {showTable && (
-          <div className="mb-6 overflow-x-auto rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-800">
-            {loadingDocs ? (
-              <p className="p-4 text-zinc-500">로딩중...</p>
-            ) : docs.length === 0 ? (
-              <p className="p-4 text-zinc-500">데이터가 없습니다.</p>
-            ) : (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-zinc-100 dark:bg-zinc-700 text-left">
-                    {col.tableColumns.map((c) => (
-                      <th key={c} className="px-3 py-2 font-medium text-zinc-700 dark:text-zinc-300 whitespace-nowrap">
-                        {c}
-                      </th>
-                    ))}
-                    <th className="px-3 py-2 font-medium text-zinc-700 dark:text-zinc-300 whitespace-nowrap">액션</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {docs.map((doc, i) => {
-                    const isEditing = editingId === doc._id;
-                    return (
-                      <tr
-                        key={doc._id || i}
-                        className={`border-t border-zinc-100 dark:border-zinc-700 ${
-                          isEditing
-                            ? 'bg-blue-50 dark:bg-blue-900/20'
-                            : 'hover:bg-zinc-50 dark:hover:bg-zinc-700/50'
-                        }`}
-                      >
-                        {col.tableColumns.map((c) => (
-                          <td key={c} className="px-3 py-2 text-zinc-800 dark:text-zinc-200 whitespace-nowrap max-w-[200px] truncate">
-                            {typeof doc[c] === 'object' ? JSON.stringify(doc[c]) : String(doc[c] ?? '')}
-                          </td>
-                        ))}
-                        <td className="px-3 py-2 whitespace-nowrap">
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleEdit(doc)}
-                              className={`text-xs font-medium cursor-pointer ${
-                                isEditing
-                                  ? 'text-blue-400'
-                                  : 'text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300'
-                              }`}
-                            >
-                              {isEditing ? '수정중...' : '수정'}
-                            </button>
-                            <button
-                              onClick={() => handleDelete(doc._id)}
-                              className="text-red-500 hover:text-red-700 text-xs font-medium cursor-pointer"
-                            >
-                              삭제
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            )}
-            <div className="px-3 py-2 text-xs text-zinc-400 border-t border-zinc-100 dark:border-zinc-700">
-              총 {docs.length}건
-            </div>
-          </div>
-        )}
+          📋 전체 데이터 보기
+        </Link>
 
         {/* 입력/수정 폼 */}
         <div
