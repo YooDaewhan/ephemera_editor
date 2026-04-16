@@ -18,6 +18,8 @@ export interface CollectionDef {
   tableColumns: string[]; // 테이블에 보여줄 주요 컬럼
   codeField?: string;   // 자동 생성할 코드 필드명
   codePrefix?: string;  // 코드 접두사 (예: 'gem_', 'mon_')
+  // 테이블에서 두 필드를 "main(sub)" 형식으로 묶어 표시할 쌍
+  pairedColumns?: { main: string; sub: string; label: string }[];
 }
 
 const GRADE_OPTIONS = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
@@ -30,6 +32,12 @@ export const collections: CollectionDef[] = [
     codeField: 'gem_code',
     codePrefix: 'gem_',
     tableColumns: ['gem_code', 'name', 'prefix', 'grade', 'value'],
+    pairedColumns: [
+      { main: 'trait_1', sub: 'trait_1_lv', label: '특성1' },
+      { main: 'trait_2', sub: 'trait_2_lv', label: '특성2' },
+      { main: 'trait_3', sub: 'trait_3_lv', label: '특성3' },
+      { main: 'trait_4', sub: 'trait_4_lv', label: '특성4' },
+    ],
     fields: [
       { key: 'gem_code', label: '보석 코드', type: 'text', required: true, placeholder: 'gem_fire_001' },
       { key: 'name', label: '이름', type: 'text', required: true },

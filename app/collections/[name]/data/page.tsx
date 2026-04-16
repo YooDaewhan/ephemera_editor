@@ -18,7 +18,7 @@ export default function CollectionDataPage({ params }: { params: Promise<{ name:
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
 
-  // 컬럼 순서: 코드 → 이름 → 설명 → 나머지 tableColumns
+  // 컬럼 순서: 코드 → 이름 → 설명 → 나머지 tableColumns → pairedColumns
   const buildColumns = (): string[] => {
     if (!col) return [];
     const tableSet = [...col.tableColumns];
@@ -43,6 +43,11 @@ export default function CollectionDataPage({ params }: { params: Promise<{ name:
   };
 
   const columns = buildColumns();
+
+  // pairedColumns의 main 키 → { main, sub, label } 맵
+  const pairedMap = new Map(
+    (col?.pairedColumns ?? []).map((p) => [p.main, p])
+  );
 
   const fetchDocs = () => {
     if (!col) { setLoading(false); return; }
@@ -172,6 +177,14 @@ export default function CollectionDataPage({ params }: { params: Promise<{ name:
                       {col.fields.find((f) => f.key === c)?.label ?? c}
                     </th>
                   ))}
+                  {(col.pairedColumns ?? []).map((p) => (
+                    <th
+                      key={`paired_${p.main}`}
+                      className="px-3 py-2 font-medium text-zinc-700 dark:text-zinc-300 whitespace-nowrap"
+                    >
+                      {p.label}
+                    </th>
+                  ))}
                   <th className="px-3 py-2 font-medium text-zinc-700 dark:text-zinc-300 whitespace-nowrap text-right">
                     작업
                   </th>
@@ -194,6 +207,22 @@ export default function CollectionDataPage({ params }: { params: Promise<{ name:
                         {typeof doc[c] === 'object' ? JSON.stringify(doc[c]) : String(doc[c] ?? '')}
                       </td>
                     ))}
+                    {(col.pairedColumns ?? []).map((p) => {
+                      const mainVal = String(doc[p.main] ?? '');
+                      const subVal = String(doc[p.sub] ?? '');
+                      const display = mainVal
+                        ? subVal ? `${mainVal}(${subVal})` : mainVal
+                        : '';
+                      return (
+                        <td
+                          key={`paired_${p.main}`}
+                          className="px-3 py-2 text-zinc-800 dark:text-zinc-200 whitespace-nowrap max-w-50 truncate"
+                          title={display}
+                        >
+                          {display}
+                        </td>
+                      );
+                    })}
                     <td className="px-3 py-2 whitespace-nowrap text-right">
                       <div className="flex items-center justify-end gap-1.5">
                         <button
