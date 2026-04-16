@@ -115,7 +115,7 @@ export const collections: CollectionDef[] = [
     emoji: '⚔️',
     codeField: 'item_code',
     codePrefix: 'wpn_',
-    tableColumns: ['item_code', 'name', 'grade', 'atk', 'durability_max'],
+    tableColumns: ['item_code', 'weapon_skill'],
     fields: [
       { key: 'item_code', label: '아이템 코드', type: 'text', required: true, placeholder: 'wpn_sword_001' },
       { key: 'name', label: '이름', type: 'text', required: true },
