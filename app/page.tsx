@@ -18,7 +18,7 @@ export default function Home() {
           {collections.map((col) => (
             <Link
               key={col.name}
-              href={`/collections/${col.name}`}
+              href={`/collections/${col.name}/data`}
               className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 hover:shadow-md transition-all cursor-pointer"
             >
               <span className="text-2xl">{col.emoji}</span>

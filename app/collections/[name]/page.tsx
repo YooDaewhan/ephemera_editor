@@ -120,23 +120,15 @@ export default function CollectionPage({ params }: { params: Promise<{ name: str
         {/* 헤더 */}
         <div className="flex items-center gap-3 mb-4">
           <Link
-            href="/"
+            href={`/collections/${name}/data`}
             className="text-sm px-3 py-1.5 rounded-lg bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-300 dark:hover:bg-zinc-600 transition"
           >
-            ← 메인
+            ← 목록
           </Link>
           <h1 className="text-2xl font-bold text-zinc-900 dark:text-white">
             {col.emoji} {col.label}
           </h1>
         </div>
-
-        {/* 전체 데이터 보기 링크 */}
-        <Link
-          href={`/collections/${name}/data`}
-          className="mb-4 inline-block px-4 py-2 rounded-lg bg-blue-600 text-white font-medium text-sm hover:bg-blue-700 transition"
-        >
-          📋 전체 데이터 보기
-        </Link>
 
         {/* 입력/수정 폼 */}
         <div
