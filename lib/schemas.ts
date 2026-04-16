@@ -31,7 +31,7 @@ export const collections: CollectionDef[] = [
     emoji: '💎',
     codeField: 'gem_code',
     codePrefix: 'gem_',
-    tableColumns: ['gem_code', 'name', 'prefix', 'grade', 'value'],
+    tableColumns: ['gem_code', 'name'],
     pairedColumns: [
       { main: 'trait_1', sub: 'trait_1_lv', label: '특성1' },
       { main: 'trait_2', sub: 'trait_2_lv', label: '특성2' },
