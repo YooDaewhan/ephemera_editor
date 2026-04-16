@@ -2,7 +2,7 @@
 
 import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
-import { getCollection } from '@/lib/schemas';
+import { getCollection, FieldDef } from '@/lib/schemas';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Doc = Record<string, any>;
@@ -13,6 +13,10 @@ export default function CollectionDataPage({ params }: { params: Promise<{ name:
 
   const [docs, setDocs] = useState<Doc[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editingDoc, setEditingDoc] = useState<Doc | null>(null);
+  const [editForm, setEditForm] = useState<Doc>({});
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // 컬럼 순서: 코드 → 이름 → 설명 → 나머지 tableColumns
   const buildColumns = (): string[] => {
@@ -20,21 +24,17 @@ export default function CollectionDataPage({ params }: { params: Promise<{ name:
     const tableSet = [...col.tableColumns];
     const ordered: string[] = [];
 
-    // 코드 필드 (tableColumns 중 _code로 끝나거나 첫 번째)
     const codeCol = tableSet.find((c) => c.endsWith('_code') || c === 'code' || c === 'rank');
     if (codeCol) ordered.push(codeCol);
 
-    // 이름 필드
     if (col.fields.some((f) => f.key === 'name') && !ordered.includes('name')) {
       ordered.push('name');
     }
 
-    // 설명 필드 (tableColumns에 없어도 추가)
     if (col.fields.some((f) => f.key === 'description')) {
       ordered.push('description');
     }
 
-    // 나머지 tableColumns
     for (const c of tableSet) {
       if (!ordered.includes(c)) ordered.push(c);
     }
@@ -44,14 +44,91 @@ export default function CollectionDataPage({ params }: { params: Promise<{ name:
 
   const columns = buildColumns();
 
-  useEffect(() => {
+  const fetchDocs = () => {
     if (!col) { setLoading(false); return; }
+    setLoading(true);
     fetch(`/api/collections/${name}`)
       .then((r) => r.json())
       .then((data) => setDocs(Array.isArray(data) ? data : []))
       .catch(() => setDocs([]))
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchDocs();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [name, col]);
+
+  // 수정 패널 열기
+  const openEdit = (doc: Doc) => {
+    setEditingDoc(doc);
+    const init: Doc = {};
+    col?.fields.forEach((f) => {
+      const val = doc[f.key];
+      if (val === null || val === undefined) {
+        init[f.key] = '';
+      } else if (f.type === 'json' && typeof val === 'object') {
+        init[f.key] = JSON.stringify(val, null, 2);
+      } else {
+        init[f.key] = String(val);
+      }
+    });
+    setEditForm(init);
+  };
+
+  const closeEdit = () => {
+    setEditingDoc(null);
+    setEditForm({});
+  };
+
+  // 수정 저장
+  const handleSave = async () => {
+    if (!col || !editingDoc?._id) return;
+    setSaving(true);
+    const payload: Doc = {};
+    col.fields.forEach((f) => {
+      const val = editForm[f.key];
+      if (val === '' || val === undefined || val === null) {
+        payload[f.key] = null;
+      } else if (f.type === 'number') {
+        payload[f.key] = Number(val);
+      } else if (f.type === 'json') {
+        try { payload[f.key] = JSON.parse(val); }
+        catch { payload[f.key] = val; }
+      } else {
+        payload[f.key] = val;
+      }
+    });
+    try {
+      const res = await fetch(`/api/collections/${name}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editingDoc._id, ...payload }),
+      });
+      if (res.ok) {
+        closeEdit();
+        fetchDocs();
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // 삭제
+  const handleDelete = async (id: string) => {
+    if (!confirm('정말 삭제하시겠습니까?')) return;
+    setDeletingId(id);
+    try {
+      await fetch(`/api/collections/${name}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      setDocs((prev) => prev.filter((d) => d._id !== id));
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   if (!col) {
     return (
@@ -95,6 +172,9 @@ export default function CollectionDataPage({ params }: { params: Promise<{ name:
                       {col.fields.find((f) => f.key === c)?.label ?? c}
                     </th>
                   ))}
+                  <th className="px-3 py-2 font-medium text-zinc-700 dark:text-zinc-300 whitespace-nowrap text-right">
+                    작업
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -114,6 +194,23 @@ export default function CollectionDataPage({ params }: { params: Promise<{ name:
                         {typeof doc[c] === 'object' ? JSON.stringify(doc[c]) : String(doc[c] ?? '')}
                       </td>
                     ))}
+                    <td className="px-3 py-2 whitespace-nowrap text-right">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() => openEdit(doc)}
+                          className="px-2.5 py-1 text-xs rounded-md bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800/60 transition cursor-pointer"
+                        >
+                          수정
+                        </button>
+                        <button
+                          onClick={() => handleDelete(doc._id)}
+                          disabled={deletingId === doc._id}
+                          className="px-2.5 py-1 text-xs rounded-md bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-800/60 transition cursor-pointer disabled:opacity-50"
+                        >
+                          {deletingId === doc._id ? '삭제중...' : '삭제'}
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -124,6 +221,115 @@ export default function CollectionDataPage({ params }: { params: Promise<{ name:
           </div>
         </div>
       </div>
+
+      {/* 수정 패널 (오버레이) */}
+      {editingDoc && (
+        <div className="fixed inset-0 z-50 flex">
+          {/* 백드롭 */}
+          <div
+            className="flex-1 bg-black/40"
+            onClick={closeEdit}
+          />
+          {/* 패널 */}
+          <div className="w-full max-w-xl bg-white dark:bg-zinc-900 shadow-2xl flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-200 dark:border-zinc-700">
+              <h2 className="text-lg font-semibold text-zinc-900 dark:text-white">✏️ 항목 수정</h2>
+              <button
+                onClick={closeEdit}
+                className="text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 transition text-xl cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {col.fields.map((f) => (
+                  <FieldInput
+                    key={f.key}
+                    field={f}
+                    value={editForm[f.key] ?? ''}
+                    onChange={(v) => setEditForm((prev) => ({ ...prev, [f.key]: v }))}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="px-6 py-4 border-t border-zinc-200 dark:border-zinc-700 flex gap-3">
+              <button
+                onClick={handleSave}
+                disabled={saving}
+                className="px-6 py-2 rounded-full bg-blue-600 text-white font-semibold text-sm hover:bg-blue-700 transition disabled:opacity-50 cursor-pointer"
+              >
+                {saving ? '저장 중...' : '저장하기'}
+              </button>
+              <button
+                onClick={closeEdit}
+                className="px-6 py-2 rounded-full bg-zinc-200 dark:bg-zinc-700 text-zinc-700 dark:text-zinc-300 font-semibold text-sm hover:bg-zinc-300 dark:hover:bg-zinc-600 transition cursor-pointer"
+              >
+                취소
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// 필드 입력 컴포넌트
+function FieldInput({
+  field,
+  value,
+  onChange,
+}: {
+  field: FieldDef;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const base =
+    'rounded-lg border border-zinc-300 dark:border-zinc-600 bg-zinc-50 dark:bg-zinc-700 text-zinc-900 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition w-full';
+
+  const isFullWidth = field.type === 'textarea' || field.type === 'json';
+
+  return (
+    <div className={`flex flex-col gap-1 ${isFullWidth ? 'sm:col-span-2' : ''}`}>
+      <label className="text-xs font-medium text-zinc-600 dark:text-zinc-400">
+        {field.label}
+        {field.required && <span className="text-red-500 ml-0.5">*</span>}
+      </label>
+      {field.type === 'select' ? (
+        <select value={value} onChange={(e) => onChange(e.target.value)} className={base}>
+          <option value="">선택...</option>
+          {field.options?.map((o) => (
+            <option key={o} value={o}>
+              {o || '(없음)'}
+            </option>
+          ))}
+        </select>
+      ) : field.type === 'textarea' ? (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={field.placeholder}
+          rows={2}
+          className={`${base} resize-none`}
+        />
+      ) : field.type === 'json' ? (
+        <textarea
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={field.placeholder}
+          rows={3}
+          className={`${base} resize-none font-mono text-xs`}
+        />
+      ) : (
+        <input
+          type={field.type === 'number' ? 'number' : 'text'}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={field.placeholder}
+          className={base}
+        />
+      )}
     </div>
   );
 }
