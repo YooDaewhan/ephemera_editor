@@ -17,15 +17,31 @@ export default function CollectionPage({ params }: { params: Promise<{ name: str
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [message, setMessage] = useState('');
 
-  const initForm = () => {
+  const initForm = (autoCode?: string) => {
     if (!col) return {};
     const init: Doc = {};
     col.fields.forEach((f) => { init[f.key] = ''; });
+    if (autoCode && col.codeField) {
+      init[col.codeField] = autoCode;
+    }
     return init;
   };
 
+  const generateCode = async (): Promise<string | undefined> => {
+    if (!col?.codeField || !col?.codePrefix) return undefined;
+    try {
+      const res = await fetch(`/api/collections/${name}`);
+      const data = await res.json();
+      const count = Array.isArray(data) ? data.length : 0;
+      return `${col.codePrefix}${String(count + 1).padStart(3, '0')}`;
+    } catch {
+      return undefined;
+    }
+  };
+
   useEffect(() => {
-    if (col) setForm(initForm());
+    if (!col) return;
+    generateCode().then((code) => setForm(initForm(code)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [col]);
 
@@ -84,10 +100,10 @@ export default function CollectionPage({ params }: { params: Promise<{ name: str
     }
   };
 
-  // 수정 취소
+  // 수정 취소 또는 저장 후 초기화
   const handleCancelEdit = () => {
     setEditingId(null);
-    setForm(initForm());
+    generateCode().then((code) => setForm(initForm(code)));
   };
 
   if (!col) {
