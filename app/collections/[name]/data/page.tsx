@@ -199,8 +199,8 @@ export default function CollectionDataPage({ params }: { params: Promise<{ name:
                     {columns.map((c) => (
                       <td
                         key={c}
-                        className={`px-3 py-2 text-zinc-800 dark:text-zinc-200 truncate ${
-                          c === 'description' ? 'max-w-[320px]' : 'whitespace-nowrap max-w-[200px]'
+                        className={`px-3 py-2 text-zinc-800 dark:text-zinc-200 ${
+                          c === 'description' ? 'max-w-100 whitespace-pre-wrap wrap-break-word' : 'whitespace-nowrap max-w-50 truncate'
                         }`}
                         title={typeof doc[c] === 'object' ? JSON.stringify(doc[c]) : String(doc[c] ?? '')}
                       >
