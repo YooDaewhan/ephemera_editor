@@ -35,7 +35,7 @@ export default function Home() {
             ) : (
               <Link
                 key={col.name}
-                href={`/collections/${col.name}`}
+                href={`/collections/${col.name}/data`}
                 className="flex flex-col items-center justify-center gap-2 p-4 rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 hover:border-zinc-400 dark:hover:border-zinc-500 hover:shadow-md transition-all cursor-pointer"
               >
                 <span className="text-2xl">{col.emoji}</span>
@@ -76,7 +76,7 @@ export default function Home() {
               <button
                 onClick={() => {
                   setPending(null);
-                  router.push(`/collections/${pending.name}`);
+                  router.push(`/collections/${pending.name}/data`);
                 }}
                 className="flex-1 py-2 rounded-lg bg-zinc-900 dark:bg-white text-sm font-medium text-white dark:text-zinc-900 hover:opacity-80 transition-opacity"
               >

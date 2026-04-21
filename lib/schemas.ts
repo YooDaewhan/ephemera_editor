@@ -17,6 +17,10 @@ export interface CollectionDef {
   fields: FieldDef[];
   tableColumns: string[]; // 테이블에 보여줄 주요 컬럼
   comingSoon?: boolean;
+  codeField?: string;   // 자동 생성할 코드 필드명
+  codePrefix?: string;  // 코드 접두사 (예: 'gem_', 'mon_')
+  // 테이블에서 두 필드를 "main(sub)" 형식으로 묶어 표시할 쌍
+  pairedColumns?: { main: string; sub: string; label: string }[];
 }
 
 const GRADE_OPTIONS = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
@@ -26,7 +30,15 @@ export const collections: CollectionDef[] = [
     name: 'gem_master',
     label: '보석 마스터',
     emoji: '💎',
-    tableColumns: ['gem_code', 'name', 'prefix', 'grade', 'value'],
+    codeField: 'gem_code',
+    codePrefix: 'gem_',
+    tableColumns: ['gem_code', 'name'],
+    pairedColumns: [
+      { main: 'trait_1', sub: 'trait_1_lv', label: '특성1' },
+      { main: 'trait_2', sub: 'trait_2_lv', label: '특성2' },
+      { main: 'trait_3', sub: 'trait_3_lv', label: '특성3' },
+      { main: 'trait_4', sub: 'trait_4_lv', label: '특성4' },
+    ],
     fields: [
       { key: 'gem_code', label: '보석 코드', type: 'text', required: true, placeholder: 'gem_fire_001' },
       { key: 'name', label: '이름', type: 'text', required: true },
@@ -50,6 +62,8 @@ export const collections: CollectionDef[] = [
     name: 'item_master_food',
     label: '아이템 - 음식/포션',
     emoji: '🧪',
+    codeField: 'item_code',
+    codePrefix: 'food_',
     tableColumns: ['item_code', 'name', 'item_type', 'grade'],
     fields: [
       { key: 'item_code', label: '아이템 코드', type: 'text', required: true, placeholder: 'food_potion_hp_sm' },
@@ -66,6 +80,8 @@ export const collections: CollectionDef[] = [
     name: 'item_master_heart',
     label: '아이템 - 심장',
     emoji: '❤️',
+    codeField: 'item_code',
+    codePrefix: 'heart_',
     tableColumns: ['item_code', 'name', 'grade'],
     fields: [
       { key: 'item_code', label: '아이템 코드', type: 'text', required: true, placeholder: 'heart_basic_001' },
@@ -82,6 +98,8 @@ export const collections: CollectionDef[] = [
     name: 'item_master_material',
     label: '아이템 - 재료',
     emoji: '🪨',
+    codeField: 'item_code',
+    codePrefix: 'mat_',
     tableColumns: ['item_code', 'name', 'item_type', 'grade'],
     fields: [
       { key: 'item_code', label: '아이템 코드', type: 'text', required: true, placeholder: 'mat_iron_ore' },
@@ -96,7 +114,15 @@ export const collections: CollectionDef[] = [
     name: 'item_master_weapon',
     label: '아이템 - 무기',
     emoji: '⚔️',
-    tableColumns: ['item_code', 'name', 'grade', 'atk', 'durability_max'],
+    codeField: 'item_code',
+    codePrefix: 'wpn_',
+    tableColumns: ['item_code', 'weapon_skill'],
+    pairedColumns: [
+      { main: 'trait_1', sub: 'trait_1_lv', label: '특성1' },
+      { main: 'trait_2', sub: 'trait_2_lv', label: '특성2' },
+      { main: 'trait_3', sub: 'trait_3_lv', label: '특성3' },
+      { main: 'trait_4', sub: 'trait_4_lv', label: '특성4' },
+    ],
     fields: [
       { key: 'item_code', label: '아이템 코드', type: 'text', required: true, placeholder: 'wpn_sword_001' },
       { key: 'name', label: '이름', type: 'text', required: true },
@@ -104,8 +130,14 @@ export const collections: CollectionDef[] = [
       { key: 'grade', label: '등급', type: 'select', options: GRADE_OPTIONS },
       { key: 'atk', label: '공격력', type: 'number' },
       { key: 'durability_max', label: '최대 내구도', type: 'number' },
-      { key: 'elem_slot_1', label: '속성 슬롯1', type: 'select', options: ['', 'fire', 'water', 'ice', 'thunder', 'wind', 'earth'] },
-      { key: 'elem_slot_2', label: '속성 슬롯2', type: 'select', options: ['', 'fire', 'water', 'ice', 'thunder', 'wind', 'earth'] },
+      { key: 'trait_1', label: '특성1', type: 'text', placeholder: 'trait_heat' },
+      { key: 'trait_1_lv', label: '특성1 레벨', type: 'text' },
+      { key: 'trait_2', label: '특성2', type: 'text' },
+      { key: 'trait_2_lv', label: '특성2 레벨', type: 'text' },
+      { key: 'trait_3', label: '특성3', type: 'text' },
+      { key: 'trait_3_lv', label: '특성3 레벨', type: 'text' },
+      { key: 'trait_4', label: '특성4', type: 'text' },
+      { key: 'trait_4_lv', label: '특성4 레벨', type: 'text' },
       { key: 'weapon_skill', label: '무기 스킬 코드', type: 'text', placeholder: 'wsk_iron_will' },
       { key: 'upgrade_to', label: '업그레이드 대상', type: 'text' },
       { key: 'upgrade_required', label: '업그레이드 비용', type: 'number' },
@@ -117,6 +149,8 @@ export const collections: CollectionDef[] = [
     name: 'monster_master',
     label: '몬스터 마스터',
     emoji: '👾',
+    codeField: 'monster_code',
+    codePrefix: 'mon_',
     tableColumns: ['monster_code', 'name', 'emoji', 'grade', 'hp', 'atk'],
     fields: [
       { key: 'monster_code', label: '몬스터 코드', type: 'text', required: true, placeholder: 'mon_east_star_slime' },
@@ -186,6 +220,8 @@ export const collections: CollectionDef[] = [
     name: 'trait_master',
     label: '특성 마스터',
     emoji: '🌀',
+    codeField: 'trait_code',
+    codePrefix: 'trait_',
     tableColumns: ['trait_code', 'name', 'level', 'effect_1'],
     fields: [
       { key: 'trait_code', label: '특성 코드', type: 'text', required: true, placeholder: 'trait_heat' },
@@ -203,6 +239,8 @@ export const collections: CollectionDef[] = [
     name: 'weapon_skill_master',
     label: '무기 스킬 마스터',
     emoji: '🗡️',
+    codeField: 'weapon_skill_code',
+    codePrefix: 'wsk_',
     tableColumns: ['weapon_skill_code', 'name', 'skill_type', 'grade'],
     fields: [
       { key: 'weapon_skill_code', label: '무기 스킬 코드', type: 'text', required: true, placeholder: 'wsk_iron_will' },
@@ -226,6 +264,8 @@ export const collections: CollectionDef[] = [
     label: '업적',
     emoji: '🏆',
     comingSoon: true,
+    codeField: 'achievement_code',
+    codePrefix: 'ach_',
     tableColumns: ['achievement_code', 'name', 'achievement_type', 'required_count'],
     fields: [
       { key: 'achievement_code', label: '업적 코드', type: 'text', required: true, placeholder: 'ach_first_login' },
@@ -242,6 +282,8 @@ export const collections: CollectionDef[] = [
     label: '제련 레시피',
     emoji: '🔨',
     comingSoon: true,
+    codeField: 'recipe_code',
+    codePrefix: 'forge_',
     tableColumns: ['recipe_code', 'name', 'craft_type', 'grade', 'base_success_rate'],
     fields: [
       { key: 'recipe_code', label: '레시피 코드', type: 'text', required: true, placeholder: 'forge_iron_sword' },
@@ -285,6 +327,8 @@ export const collections: CollectionDef[] = [
     label: '레시피',
     emoji: '📜',
     comingSoon: true,
+    codeField: 'recipe_code',
+    codePrefix: 'rec_',
     tableColumns: ['recipe_code', 'name', 'recipe_category', 'unlocked'],
     fields: [
       { key: 'recipe_code', label: '레시피 코드', type: 'text', required: true },
@@ -309,6 +353,8 @@ export const collections: CollectionDef[] = [
     label: '스킬 마스터',
     emoji: '🔮',
     comingSoon: true,
+    codeField: 'skill_code',
+    codePrefix: 'sk_',
     tableColumns: ['skill_code', 'name', 'icon', 'grade', 'mp_cost'],
     fields: [
       { key: 'skill_code', label: '스킬 코드', type: 'text', required: true, placeholder: 'sk_slash' },
@@ -330,6 +376,8 @@ export const collections: CollectionDef[] = [
     label: '접두사 마스터',
     emoji: '✨',
     comingSoon: true,
+    codeField: 'prefix_code',
+    codePrefix: 'pf_',
     tableColumns: ['prefix_code', 'name', 'grade_bonus', 'effect_1'],
     fields: [
       { key: 'prefix_code', label: '접두사 코드', type: 'text', required: true, placeholder: 'pf_shining' },
